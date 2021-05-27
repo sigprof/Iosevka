@@ -1,0 +1,240 @@
+# Build plans for custom fonts based on Iosevka.
+#
+# This file uses YAML syntax with anchor, alias and merge key features, so that
+# similar build plans can share most of their content without the need to
+# repeat it every time.  It needs to be converted to the TOML format before it
+# could be used by the build system of Iosevka.
+---
+buildPlans:
+
+        # Cosevka Basic is a font family with only the regular and bold
+        # weights, only the normal (upright) and italic slopes (the slanted
+        # variant is not present), and only the normal width (other widths for
+        # Cosevka Basic are provided as separate families, so that they would
+        # be accessible from software which cannot specify the “width”
+        # attribute when selecting fonts).  In addition, there are no
+        # ligatures, and all characters have the same width.  These
+        # restrictions make the Cosevka Basic family usable with software that
+        # requires strictly monospace fonts and does not support modern font
+        # selection methods or advanced text rendering.
+        #
+        # This font family is also used as a base for all other families
+        # defined here; in particular, the character variant configuration set
+        # here is inherited by all other fonts.
+        #
+        cosevka-basic: &cosevka-basic
+                family: Cosevka Basic
+                spacing: fixed
+                serifs: sans
+                no-cv-ss: true
+                widths:
+                        normal:
+                                shape: 500
+                                menu: 5
+                                css: normal
+                slopes:
+                        upright: normal
+                        italic: italic
+                weights:
+                        regular:
+                                shape: 400
+                                menu: 400
+                                css: 400
+                        bold:
+                                shape: 700
+                                menu: 700
+                                css: 700
+                variants:
+                        design:
+                                capital-b: more-asymmetric-unilateral-serifed
+                                capital-d: more-rounded-unilateral-serifed
+                                f: serifless-crossbar-at-x-height
+                                g: single-storey-flat-hook
+                                i: serifed-tailed
+                                l: serifed-tailed
+                                y: straight-turn
+                                lower-lambda: straight-turn
+                                cyrl-capital-u: straight-turn
+                                zero: reverse-slashed-oval
+                                one: base
+                                two: curly-neck
+                                three: flattop
+                                six: open-contour
+                                seven: bend-serifless
+                                nine: open-contour
+                                asterisk: penta-low
+                        italic:
+                                f: flat-hook-tailed-crossbar-at-x-height
+                                y: cursive-flat-hook
+
+        # Cosevka Basic Semi-Wide is a wider version of Cosevka Basic (15%
+        # wider than the normal version, which matches the Iosevka Extended
+        # width in 5.x versions).  The font properties are set to pretend that
+        # the font has “normal” width to avoid confusing software which does
+        # not support font widths properly.
+        #
+        # The unusual “Semi-Wide” name is used instead of “Semi-Extended” or
+        # “Semi-Expanded” to avoid troubles with some software (e.g., Pango)
+        # that may handle these words at the end of font name in a special way
+        # (Pango would treat “Semi-Expanded” as a width attribute, unless a
+        # comma is added after the font family name, but sometimes other
+        # software on top of Pango has problems with commas in font names).
+        #
+        # Note that the name of the `widths` subkey must correspond to the
+        # actual font width (i.e., it should not be `normal`, unlike the
+        # example that Iosevka Customizer suggests), because this name is used
+        # to create the TTF filename suffix, which is later used to combine
+        # fonts with similar suffixes into a single TTC for glyph unification
+        # and hinting.  Setting the `widths` subkey to `normal` would break
+        # glyph unification with other fonts which actually have the same
+        # width, resulting in a larger TTC file.  The TTF filename suffix is
+        # modified later in the Makefile wrapper for the Iosevka build system,
+        # so the released font files do not get repeated width designation in
+        # filenames.
+        #
+        cosevka-basic-semiwide:
+                <<: *cosevka-basic
+                family: Cosevka Basic Semi-Wide
+                widths:
+                        semiextended:
+                                shape: 576
+                                menu: 5
+                                css: normal
+
+        # Cosevka Basic Wide is a wider version of Cosevka Basic (20% wider
+        # than the normal version, which matches the Iosevka Extended width in
+        # 6.x versions).  The font properties are set to pretend that the font
+        # has “normal” width to avoid confusing software which does not support
+        # font widths properly.
+        #
+        # The unusual “Wide” name is used instead of “Extended” or “Expanded”
+        # to avoid troubles with some software (e.g., Pango) that may handle
+        # these words at the end of font name in a special way.
+        #
+        cosevka-basic-wide:
+                <<: *cosevka-basic
+                family: Cosevka Basic Wide
+                widths:
+                        extended:
+                                shape: 600
+                                menu: 5
+                                css: normal
+
+        # Cosevka Basic Extra-Wide is a wider version of Cosevka Basic (31%
+        # wider than the normal version).  The font properties are set to
+        # pretend that the font has “normal” width to avoid confusing software
+        # which does not support font widths properly.
+        #
+        # The unusual “Extra-Wide” name is used instead of “Extra-Extended” or
+        # “Extra-Expanded” to avoid troubles with some software (e.g., Pango)
+        # that may handle these words at the end of font name in a special way.
+        #
+        cosevka-basic-extrawide:
+                <<: *cosevka-basic
+                family: Cosevka Basic Extra-Wide
+                widths:
+                        extraextended:
+                                shape: 657
+                                menu: 5
+                                css: normal
+
+        # Cosevka Basic Ultra-Wide is a wider version of Cosevka Basic (44%
+        # wider than the normal version).  The font properties are set to
+        # pretend that the font has “normal” width to avoid confusing software
+        # which does not support font widths properly.
+        #
+        # The unusual “Ultra-Wide” name is used instead of “Ultra-Extended” or
+        # “Ultra-Expanded” to avoid troubles with some software (e.g., Pango)
+        # that may handle these words at the end of font name in a special way.
+        #
+        cosevka-basic-ultrawide:
+                <<: *cosevka-basic
+                family: Cosevka Basic Ultra-Wide
+                widths:
+                        ultraextended:
+                                shape: 720
+                                menu: 5
+                                css: normal
+
+        # Cosevka Fixed is a font family with fixed spacing and a full range of
+        # weights, slopes and widths (therefore it can be used only with
+        # software that supports modern font selection methods).  This font
+        # family does not support ligatures, and all characters have the same
+        # width, so it should be compatible with software that supports only
+        # pure monospaced fonts.
+        #
+        # Unlike the standard Iosevka Fixed font, which has only two width
+        # options (Normal and Extended, which is about 20% wider than Normal
+        # since version 6.0), Cosevka Fixed has five width options:
+        #
+        #  - Normal
+        #  - Semi-Extended (15% wider)
+        #  - Extended (20% wider)
+        #  - Extra-Extended (31% wider)
+        #  - Ultra-Extended (44% wider)
+        #
+        cosevka-fixed: &cosevka-fixed
+                <<: *cosevka-basic
+                family: Cosevka Fixed
+                widths:
+                        normal:
+                                shape: 500
+                                menu: 5
+                                css: normal
+                        semiextended:
+                                shape: 576
+                                menu: 6
+                                css: semi-expanded
+                        extended:
+                                shape: 600
+                                menu: 7
+                                css: expanded
+                        extraextended:
+                                shape: 657
+                                menu: 8
+                                css: extra-expanded
+                        ultraextended:
+                                shape: 720
+                                menu: 9
+                                css: ultra-expanded
+                slopes:  ~ # Use the default set of slopes
+                weights: ~ # Use the default set of weights
+
+        # Cosevka Code is an enhanced version of Cosevka Fixed which still
+        # tries to be compatible with software that requests a monospace font,
+        # but also supports ligatures.  By default the set of ligatures for
+        # C-like languages are enabled (slightly more than the default for
+        # Iosevka).
+        #
+        cosevka-code:
+                <<: *cosevka-fixed
+                family: Cosevka Code
+                spacing: fontconfig-mono
+                ligations:
+                        inherits: clike
+
+collectPlans:
+        # Collect all similar fonts into a single TTC file.  This saves some
+        # disk space, because several font variations actually have the same
+        # glyphs and differ only in other features such as naming or ligatures.
+        #
+        # Note that all fonts that are collected into the same TTC file should
+        # use the same sets of names for keys in the `weights`, `slopes` and
+        # `widths` tables, and these keys should correspond to the actual font
+        # shapes, not to the logical parameters for font selection (e.g., if
+        # you are making a separate family for an Extended width font to make
+        # that font variation usable in apps which cannot specify the “width”
+        # attribute when selecting fonts, the name of the key in the `widths`
+        # table should be `extended`, not `normal`).
+        #
+        cosevka:
+                from:
+                        - cosevka-basic
+                        - cosevka-basic-semiwide
+                        - cosevka-basic-wide
+                        - cosevka-basic-extrawide
+                        - cosevka-basic-ultrawide
+                        - cosevka-fixed
+                        - cosevka-code
+
+# vim:set sw=8 sta et ai:
