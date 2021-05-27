@@ -1,0 +1,114 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'cosevka-*'
+
+jobs:
+  build:
+    # Ensure that this workflow runs only in the intended repository, and not
+    # in any possible forks.
+    if: ${{ github.repository == 'sigprof/cosevka' }}
+
+    runs-on: ubuntu-20.04
+
+    env:
+      # Force timestamps in generated files to the specified value.
+      # 315532800 is 1980-01-01T00:00:00.000Z; this value is used by NixOS
+      # (1980-01-01 was chosen because this is the earliest date that can
+      # be represented in the ZIP file format).
+      SOURCE_DATE_EPOCH: 315532800
+
+      # Avoid any possible indeterminism due to time zone differences.
+      TZ: UTC
+
+    steps:
+      - name: Clean tag name
+        uses: actions/github-script@v4.0.2
+        id: tagname
+        with:
+          script: |
+            return context.ref.replace(/^refs\/tags\//, '');
+          result-encoding: string
+
+      - name: Send Telegram notification on workflow start
+        uses: ivanmilov/telegram_notify_action@v1
+        with:
+          api_key: ${{secrets.TELEGRAM_API_KEY}}
+          chat_id: ${{secrets.TELEGRAM_CHAT_ID}}
+          message: >
+            ▶️ New release build started
+
+            Repository: *${{github.repository}}*
+
+            Release tag: *${{steps.tagname.outputs.result}}*
+
+      - name: Checkout source files
+        uses: actions/checkout@v2
+
+      - name: Install APT dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install ttfautohint
+
+      - name: Use Node.js 15.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 15.x
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{runner.OS}}-npm-${{hashFiles('package-lock.json')}}
+
+      - name: Install Node.js dependencies
+        # The custom Makefile is also able to invoke `npm ci`, but the fake
+        # terminal which is used in the next step would also affect `npm`,
+        # causing it to emit undesired progress output, so a separate step
+        # without a fake terminal is used.
+        run: npm ci
+
+      - name: Build fonts
+        # `script` is required to fake a terminal, which is apparently the only
+        # way to get any progress output from the `verda` build system used by
+        # Iosevka.  `stty cols 119` is used to avoid switching the progress bar
+        # output to a different mode for >= 120 columns, while still getting
+        # most of the output not clipped.  The `sed -u` filtering is used to
+        # remove the progress bar and CPU/RAM load indicators, keeping only the
+        # output which is useful for logging.
+        run: |
+          script -q -e -c "stty cols 119; make -j" | \
+            sed -u -e 's/^.*\x1b\[1G//' -e 's/\x1b\[?25h//g'
+
+      - name: Create a draft release
+        id: release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "release-archives/*.tar.xz,release-archives/SHA256SUM"
+          draft: true
+          token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Send Telegram notification on success
+        if: ${{ success() }}
+        uses: ivanmilov/telegram_notify_action@v1
+        with:
+          api_key: ${{secrets.TELEGRAM_API_KEY}}
+          chat_id: ${{secrets.TELEGRAM_CHAT_ID}}
+          message: >
+            ✅ Draft release prepared
+
+            Repository: *${{github.repository}}*
+
+            Draft release: [${{steps.tagname.outputs.result}}](${{steps.release.outputs.html_url}})
+
+      - name: Send Telegram notification on failure
+        if: ${{ failure() }}
+        uses: ivanmilov/telegram_notify_action@v1
+        with:
+          api_key: ${{secrets.TELEGRAM_API_KEY}}
+          chat_id: ${{secrets.TELEGRAM_CHAT_ID}}
+          message: >
+            ⛔️ Release workflow failed
+
+            Repository: **{{github.repository}}*
